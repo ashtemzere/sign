@@ -1,4 +1,4 @@
-name: Sign IPA (Build from Source)
+name: Sign IPA (Ultimate Fix)
 
 on:
   workflow_dispatch:
@@ -16,21 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout zsign Source
-        uses: actions/checkout@v4
-        with:
-          repository: zhlynn/zsign
-          path: zsign_src
-
-      - name: Install Dependencies & Build
+      - name: Install & Compile Zsign (Foolproof)
         run: |
+          # 1. Install Dependencies
           sudo apt-get update
-          sudo apt-get install -y libssl-dev g++
-          cd zsign_src
+          sudo apt-get install -y libssl-dev g++ git
+          
+          # 2. Clone Repository Directly (مسۆگەرکردنی هێنانی فایلەکان)
+          rm -rf zsign_temp
+          git clone https://github.com/zhlynn/zsign.git zsign_temp
+          
+          # 3. Compile
+          cd zsign_temp
           g++ *.cpp common/*.cpp -lcrypto -O3 -o ../zsign
           cd ..
+          
+          # 4. Verify
+          ls -l zsign
           chmod +x zsign
-          ./zsign -v
 
       - name: Prepare Certificates
         env:
