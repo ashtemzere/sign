@@ -1,4 +1,4 @@
-name: Sign Large IPA (2GB+)
+name: Sign IPA (Final Fix)
 
 on:
   workflow_dispatch:
@@ -14,17 +14,18 @@ jobs:
       contents: write
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y zip unzip
+        run: sudo apt-get install -y unzip
 
-      - name: Download zsign (لینکى یەدەگ)
+      - name: Download zsign (Official Method)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # بەکارهێنانی لینکێکی یەدەگ بۆ دابەزاندنی ئامرازەکە
-          wget -O zsign https://github.com/adh415/zsign-bin/raw/main/zsign
+          # بەکارهێنانی ئامرازی فەرمی GitHub بۆ دابەزاندنی وەشانە ئەسڵییەکە
+          gh release download v1.1.2 -R zhlynn/zsign -p "*linux*"
+          tar -xvf zsign*linux*.tar.gz
           chmod +x zsign
 
       - name: Prepare Certificates
@@ -35,17 +36,17 @@ jobs:
           echo $P12_BASE64 | base64 -d > certificate.p12
           echo $MOV_BASE64 | base64 -d > profile.mobileprovision
 
-      - name: Download Large IPA
+      - name: Download IPA
         run: |
           wget -O original.ipa "${{ github.event.inputs.ipa_url }}"
 
-      - name: Sign the App
+      - name: Sign App
         env:
           PASS: ${{ secrets.CERT_PASSWORD }}
         run: |
           ./zsign -k certificate.p12 -p "$PASS" -m profile.mobileprovision -o signed_app.ipa -z 9 original.ipa
 
-      - name: Upload to Release
+      - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
