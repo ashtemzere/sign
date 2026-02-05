@@ -1,4 +1,4 @@
-name: Sign IPA (Final Fix)
+name: Sign IPA (Build from Source)
 
 on:
   workflow_dispatch:
@@ -16,17 +16,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: sudo apt-get install -y unzip
+      - name: Checkout zsign Source
+        uses: actions/checkout@v4
+        with:
+          repository: zhlynn/zsign
+          path: zsign_src
 
-      - name: Download zsign (Official Method)
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Install Dependencies & Build
         run: |
-          # بەکارهێنانی ئامرازی فەرمی GitHub بۆ دابەزاندنی وەشانە ئەسڵییەکە
-          gh release download v1.1.2 -R zhlynn/zsign -p "*linux*"
-          tar -xvf zsign*linux*.tar.gz
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev g++
+          cd zsign_src
+          g++ *.cpp common/*.cpp -lcrypto -O3 -o ../zsign
+          cd ..
           chmod +x zsign
+          ./zsign -v
 
       - name: Prepare Certificates
         env:
