@@ -1,10 +1,10 @@
-name: Sign IPA (Manual Clone)
+name: Sign IPA (Final Fix 100%)
 
 on:
   workflow_dispatch:
     inputs:
       ipa_url:
-        description: 'Direct Link to IPA (لینکى ئەپەکە)'
+        description: 'Direct Link to IPA'
         required: true
 
 jobs:
@@ -16,25 +16,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build Zsign Manually
+      # ئەمە هەنگاوە گرنگەکەیە کە ناوم ناوە Final Fix
+      - name: Final Fix - Clone & Build
         run: |
-          # 1. دابەزاندنی پێداویستییەکان
+          # 1. سڕینەوەی هەر شتێک کە پێشتر هەبووە
+          rm -rf zsign_temp
+          
+          # 2. دابەزاندنی پێداویستییەکان
           sudo apt-get update
           sudo apt-get install -y libssl-dev g++ git
 
-          # 2. هێنانی فایلەکان بۆ ناو بوخچەیەکی دیاریکراو
-          git clone https://github.com/zhlynn/zsign.git work_area
+          # 3. هێنانی فایلەکان (Cloning)
+          git clone https://github.com/zhlynn/zsign.git zsign_temp
           
-          # 3. چوونە ژوورەوە بۆ ناو بوخچەکە (گرنگترین هەنگاو)
-          cd work_area
-          
-          # 4. دروستکردن (ئێستا فایلەکان لە بەردەستن)
+          # 4. پشکنین (بۆ ئەوەی دڵنیا بین فایلەکان هاتوون)
+          echo "Listing files in zsign_temp:"
+          ls -R zsign_temp
+
+          # 5. چوونە ژوورەوە و دروستکردن
+          cd zsign_temp
           g++ *.cpp common/*.cpp -lcrypto -O3 -o zsign_tool
           
-          # 5. هێنانی بەرنامەکە بۆ دەرەوە
+          # 6. هێنانە دەرەوەی بەرنامەکە
           mv zsign_tool ../zsign
-          
-          # 6. گەڕانەوە بۆ شوێنی سەرەکی
           cd ..
           chmod +x zsign
           ./zsign -v
