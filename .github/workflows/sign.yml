@@ -19,14 +19,12 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y zip unzip libssl-dev g++
+          sudo apt-get install -y zip unzip
 
-      - name: Compile zsign (دروستکردنی ئامرازەکە)
+      - name: Download zsign (لینکى یەدەگ)
         run: |
-          git clone https://github.com/zhlynn/zsign.git
-          cd zsign
-          g++ *.cpp common/*.cpp -lcrypto -O3 -o ../zsign
-          cd ..
+          # بەکارهێنانی لینکێکی یەدەگ بۆ دابەزاندنی ئامرازەکە
+          wget -O zsign https://github.com/adh415/zsign-bin/raw/main/zsign
           chmod +x zsign
 
       - name: Prepare Certificates
