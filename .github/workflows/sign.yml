@@ -1,4 +1,4 @@
-name: Sign IPA (No-Fail Mode)
+name: Sign IPA (Manual Clone)
 
 on:
   workflow_dispatch:
@@ -10,26 +10,35 @@ on:
 jobs:
   sign-ipa:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
-      # ١. هێنانی کۆدی zsign ڕاستەوخۆ بۆ شوێنی کارەکە (بەبێ بوخچە)
-      - name: Checkout Zsign Source
-        uses: actions/checkout@v4
-        with:
-          repository: zhlynn/zsign
-          path: . 
+      - uses: actions/checkout@v4
 
-      # ٢. دروستکردن (ئێستا فایلەکان لە بەردەستن و ون نابن)
-      - name: Install & Compile
+      - name: Build Zsign Manually
         run: |
+          # 1. دابەزاندنی پێداویستییەکان
           sudo apt-get update
-          sudo apt-get install -y libssl-dev g++
-          # لێرەدا چیتر پێویست بە cd ناکات
-          g++ *.cpp common/*.cpp -lcrypto -O3 -o zsign
+          sudo apt-get install -y libssl-dev g++ git
+
+          # 2. هێنانی فایلەکان بۆ ناو بوخچەیەکی دیاریکراو
+          git clone https://github.com/zhlynn/zsign.git work_area
+          
+          # 3. چوونە ژوورەوە بۆ ناو بوخچەکە (گرنگترین هەنگاو)
+          cd work_area
+          
+          # 4. دروستکردن (ئێستا فایلەکان لە بەردەستن)
+          g++ *.cpp common/*.cpp -lcrypto -O3 -o zsign_tool
+          
+          # 5. هێنانی بەرنامەکە بۆ دەرەوە
+          mv zsign_tool ../zsign
+          
+          # 6. گەڕانەوە بۆ شوێنی سەرەکی
+          cd ..
           chmod +x zsign
           ./zsign -v
 
-      # ٣. ئامادەکردنی بڕوانامەکان
       - name: Prepare Certificates
         env:
           P12_BASE64: ${{ secrets.P12_FILE }}
@@ -38,20 +47,17 @@ jobs:
           echo $P12_BASE64 | base64 -d > certificate.p12
           echo $MOV_BASE64 | base64 -d > profile.mobileprovision
 
-      # ٤. دابەزاندنی ئەپەکە
       - name: Download IPA
         run: |
           wget -O original.ipa "${{ github.event.inputs.ipa_url }}"
 
-      # ٥. ئیمزاکردن
       - name: Sign App
         env:
           PASS: ${{ secrets.CERT_PASSWORD }}
         run: |
           ./zsign -k certificate.p12 -p "$PASS" -m profile.mobileprovision -o signed_app.ipa -z 9 original.ipa
 
-      # ٦. ئەپلۆدکردنی ئەنجام
-      - name: Upload Result
+      - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ github.run_number }}
