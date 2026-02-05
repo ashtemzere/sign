@@ -1,4 +1,4 @@
-name: Sign IPA (Final Fix 100%)
+name: Sign IPA (Auto-Find Fix)
 
 on:
   workflow_dispatch:
@@ -16,30 +16,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # ئەمە هەنگاوە گرنگەکەیە کە ناوم ناوە Final Fix
-      - name: Final Fix - Clone & Build
+      - name: Smart Build Zsign
         run: |
-          # 1. سڕینەوەی هەر شتێک کە پێشتر هەبووە
-          rm -rf zsign_temp
-          
-          # 2. دابەزاندنی پێداویستییەکان
+          # 1. دابەزاندنی بەرنامە پێویستەکان
           sudo apt-get update
           sudo apt-get install -y libssl-dev g++ git
 
-          # 3. هێنانی فایلەکان (Cloning)
-          git clone https://github.com/zhlynn/zsign.git zsign_temp
+          # 2. هێنانی فایلەکان (Clone)
+          rm -rf zsign_repo
+          git clone --depth 1 https://github.com/zhlynn/zsign.git zsign_repo
           
-          # 4. پشکنین (بۆ ئەوەی دڵنیا بین فایلەکان هاتوون)
-          echo "Listing files in zsign_temp:"
-          ls -R zsign_temp
+          # 3. گەڕان بەدوای فایلەکەدا (گرنگترین بەش)
+          # ئەم کۆدە خۆی دەگەڕێت بزانێت zsign.cpp لە کوێیە
+          SRC_DIR=$(find zsign_repo -name "zsign.cpp" -exec dirname {} \;)
+          
+          if [ -z "$SRC_DIR" ]; then
+            echo "Error: فایلەکان نەدۆزرانەوە، تکایە دڵنیابە ئینتەرنێت هەیە."
+            exit 1
+          fi
+          
+          echo "Source found in: $SRC_DIR"
+          cd "$SRC_DIR"
 
-          # 5. چوونە ژوورەوە و دروستکردن
-          cd zsign_temp
+          # 4. دروستکردنی بەرنامەکە
           g++ *.cpp common/*.cpp -lcrypto -O3 -o zsign_tool
           
-          # 6. هێنانە دەرەوەی بەرنامەکە
-          mv zsign_tool ../zsign
-          cd ..
+          # 5. گواستنەوەی بۆ شوێنی سەرەکی
+          mv zsign_tool ../../zsign
+          cd ../..
           chmod +x zsign
           ./zsign -v
 
