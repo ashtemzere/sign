@@ -1,0 +1,51 @@
+name: Sign Large IPA (2GB+)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: 'Direct Link to IPA (لینکى ئەپەکە لێرە دابنێ)'
+        required: true
+
+jobs:
+  sign-ipa:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install zsign (ئامرازی ئیمزاکردن)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip unzip
+          wget https://github.com/zhlynn/zsign/releases/download/v1.1.2/zsign-1.1.2-linux.tar.gz
+          tar -xvf zsign-1.1.2-linux.tar.gz
+          chmod +x zsign
+
+      - name: Prepare Certificates
+        env:
+          P12_BASE64: ${{ secrets.P12_FILE }}
+          MOV_BASE64: ${{ secrets.PROVISION_FILE }}
+        run: |
+          echo $P12_BASE64 | base64 -d > certificate.p12
+          echo $MOV_BASE64 | base64 -d > profile.mobileprovision
+
+      - name: Download Large IPA
+        run: |
+          wget -O original.ipa "${{ github.event.inputs.ipa_url }}"
+
+      - name: Sign the App
+        env:
+          PASS: ${{ secrets.CERT_PASSWORD }}
+        run: |
+          ./zsign -k certificate.p12 -p "$PASS" -m profile.mobileprovision -o signed_app.ipa -z 9 original.ipa
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          files: signed_app.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
