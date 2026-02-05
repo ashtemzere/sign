@@ -1,4 +1,4 @@
-name: Sign IPA (Ultimate Fix)
+name: Sign IPA (ZIP Method)
 
 on:
   workflow_dispatch:
@@ -16,24 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install & Compile Zsign (Foolproof)
+      - name: Install & Build Zsign (ZIP Method)
         run: |
           # 1. Install Dependencies
           sudo apt-get update
-          sudo apt-get install -y libssl-dev g++ git
-          
-          # 2. Clone Repository Directly (مسۆگەرکردنی هێنانی فایلەکان)
-          rm -rf zsign_temp
-          git clone https://github.com/zhlynn/zsign.git zsign_temp
+          sudo apt-get install -y libssl-dev g++ unzip wget
+
+          # 2. Download Source Code as ZIP (مسۆگەرترە لە clone)
+          wget https://github.com/zhlynn/zsign/archive/master.zip -O zsign.zip
+          unzip zsign.zip
           
           # 3. Compile
-          cd zsign_temp
+          cd zsign-master
           g++ *.cpp common/*.cpp -lcrypto -O3 -o ../zsign
           cd ..
-          
+
           # 4. Verify
-          ls -l zsign
           chmod +x zsign
+          ./zsign -v
 
       - name: Prepare Certificates
         env:
